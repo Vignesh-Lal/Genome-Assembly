@@ -1,0 +1,88 @@
+(If any question was not answered on this document please refer to the second document where you will find the tables and figures)
+
+Conda activate genomeanalysis
+
+spades.py -1 Vignesh_1.fastq -2 Vignesh_2.fastq -o spadesout
+
+abyss-pe name=assembly k=96 B=2G in='Vignesh_1.fastq Vignesh_2.fastq'
+
+mkdir abyssout
+mv assembly* abyssout/
+#	Skipped the creating of a directory since the command line wasn't allowing for the ABySS or SPAdes to work so instead used galaxy.
+
+# Assembled genome using galaxy for SPAdes v3.15.5 with default settings
+
+# Assembled genome using galaxy for ABySS v2.3.10 
+
+#	1) From the ABySS output, create a table for the unitigs, contigs, and scaffolds with the number of each, N50 for each, and predicted genome length. The table can be found on the word document.
+#	2) https://github.com/bcgsc/abyssLinks to an external site. This is the link to the documentation for ABySS. In your own words, please summarize the function of each of the commands (e.g., abyss-pe, k, B, etc) that you included in your code.
+#	3) https://ablab.github.io/spades/index.htmlLinks to an external site. This is the documentation for SPAdes. Based on this manual, can you identify how you could modify the code you used to do a hybrid assembly with nanopore reads? Please explain what a hybrid assembly is and why someone might want to do that.
+#	4) Include a screenshot of the QUAST assembly statistics for the ABySS and SPAdes assembly. This is a demo from the sample files we worked on.
+
+
+#Quality check using QUAST for both files
+
+quast.py spadesoutgalaxy/scaffolds.fasta -o quastspades
+quast.py abyssoutgalaxy/scaffolds.fasta -o quastabyss
+
+#	5) Based on the statistics from your genome, which assembly do you think is best? Why? This is the assembly you can use going forward. 
+#	The better assembly was the SPAdes since it had a lower error rate and the ABySS had a much higher error rate of around 140 compared to the 2 that was given by SPAdes.
+
+#	6) How can we use barrnap to figure out what species we have? Why is using the 16S rRNA sequence a good, but imperfect, tool for identifying species identity?
+#	The barrnap software allows us to identify the location of where a specific gene can be located and between which base pairs. Using the 16S rRNA sequence can be imperfect if you have genetically close related species that are trying to be identified and the only available gene is a partial amplicon of the gene.
+
+#Pull rRNA sequences with barrnap version 0.9
+#	Pulls out where the sequence is located in the genome
+
+barrnap --kingdom bac spadesoutgalaxy/scaffolds.fasta > rRNAsequences.gff
+
+#Use bedtools to pull fasta sequences version 2.31.1
+
+bedtools getfasta -fi spadesoutgalaxy/scaffolds.fasta -bed rRNAsequences.gff -fo rRNAsequences.fasta
+
+#make a folder with all the rRNA information in one place
+
+mkdir rRNAinfo
+mv rRNAs* rRNAinfo/
+
+#Used blastn to identify the organism.
+
+#	7) What species do you have? Include a screenshot of your top NCBI results.
+#	Cyanobacterium aponinum
+
+#Average nucleotides identity with fastANI version 1.34
+
+pico neighbors.txt
+
+neighbors/stanieri.fasta
+neighbors/Dongsha4.fasta
+
+fastANI -q spadesoutgalaxy/scaffolds.fasta --rl neighbors.txt -o Cyanobacteriumneighbors.txt 
+
+# Protein analysis using DFAST
+
+#	8) What is genome annotation? Why is it important to do that?
+#	Helps define the function of the genome for studying. The purpose is to find any of the protein-coding regions.
+#	9) Perform a genome annotation using two different programs. Find 3 of the 5 genes/features in your results file and create a table of those results: recA, gyrA, 16S rRNA, rpsB, dnaA. What is the location of the genes you chose? What does each program tell you about the gene? How are the outputs different between the two programs.
+	EGKHFOJE_00124 is the location of the recA gene computed from the DFAST program and LOCUS_09860 from the Prokka program on Galaxy. EGKHFOJE_01102 is the location for the gryA gene from DFAST size of 2559 and LOCUS_11590 for the Prokka program with a length of 1015..1575 base pairs. EGKHFOJE_01032 for the location of the rpsB gene with the size of 819 and the Prokka program LOCUS_26570 with the size of 24800..25618.
+#	10) Create a table for your ANI results. How do you interpret these results? What do each of the columns represent? Hint: You can refer to the original paper to find that information.
+#	The first column explains what the program was used to pull from and the second column helps explain what the name of those files were. The third column explains their similarity compared to the reference genome given. 
+
+dfast --genome spadesoutgalaxy/scaffolds.fasta --out dfast_output
+
+	# didn't want to work and had to add the --force line in
+	dfast -- force --genome spadesoutgalaxy/scaffolds.fasta --out dfast_output
+
+# added new line to have the HMM profile work
+	dfast_file_downloader.py --protein dfast --cdd Cog --hmm TIGR
+
+# the system would work halfway and then stop at the second DBsearch and would abort the whole command.
+
+#Used RAST and Prokka on galaxy
+
+#Protein annotation using Prokka on Galaxy version 1.14.6+galaxy1
+	#tbl file is what you can upload to GenBank
+	#faa file will have the protein sequences
+	
+
+
